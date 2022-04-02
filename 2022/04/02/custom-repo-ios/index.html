@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.1.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"b2t":true,"scrollpercent":true,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="创建私有pod库：创建公有Pod库或者私有Pod库, 实际上原理是一样的, 都是基于git服务和repo协议, 不一样的是, 两者的版本索引查询方式不一样, 公有库的podspec由CocoaPods&#x2F;Specs管理, 而内部私有使用的pod库需要自己建立一个仓库来管理podspec. 123&#x2F;&#x2F; 创建pod库&#x2F;&#x2F; 例如：pod lib create GJNotifyViewpod li">
+<meta property="og:type" content="article">
+<meta property="og:title" content="私有pod库创建">
+<meta property="og:url" content="http://example.com/2022/04/02/custom-repo-ios/index.html">
+<meta property="og:site_name" content="白纸上涂鸦の博客">
+<meta property="og:description" content="创建私有pod库：创建公有Pod库或者私有Pod库, 实际上原理是一样的, 都是基于git服务和repo协议, 不一样的是, 两者的版本索引查询方式不一样, 公有库的podspec由CocoaPods&#x2F;Specs管理, 而内部私有使用的pod库需要自己建立一个仓库来管理podspec. 123&#x2F;&#x2F; 创建pod库&#x2F;&#x2F; 例如：pod lib create GJNotifyViewpod li">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/.com//editpodspec.png">
+<meta property="article:published_time" content="2022-04-02T14:14:10.000Z">
+<meta property="article:modified_time" content="2022-04-02T14:40:56.019Z">
+<meta property="article:author" content="Mr.shao">
+<meta property="article:tag" content="iOS">
+<meta property="article:tag" content="cocoapods">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/.com//editpodspec.png">
+
+<link rel="canonical" href="http://example.com/2022/04/02/custom-repo-ios/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>私有pod库创建 | 白纸上涂鸦の博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="白纸上涂鸦の博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">白纸上涂鸦の博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录生活的点点滴滴</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">1</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">3</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/02/custom-repo-ios/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Mr.shao">
+      <meta itemprop="description" content="直到这一刻微笑着说话为止，我至少留下了一公升的眼泪">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="白纸上涂鸦の博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          私有pod库创建
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-04-02 22:14:10 / 修改时间：22:40:56" itemprop="dateCreated datePublished" datetime="2022-04-02T22:14:10+08:00">2022-04-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">iOS工具</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="创建私有pod库："><a href="#创建私有pod库：" class="headerlink" title="创建私有pod库："></a>创建私有pod库：</h3><p>创建公有Pod库或者私有Pod库, 实际上原理是一样的, 都是基于git服务和repo协议, 不一样的是, 两者的版本索引查询方式不一样, 公有库的podspec由CocoaPods&#x2F;Specs管理, 而内部私有使用的pod库需要自己建立一个仓库来管理podspec.</p>
+<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建pod库</span></span><br><span class="line"><span class="comment">// 例如：pod lib create GJNotifyView</span></span><br><span class="line">pod lib create [repo-name]</span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<h4 id="回车之后，终端会询问你几个哲学的问题"><a href="#回车之后，终端会询问你几个哲学的问题" class="headerlink" title="回车之后，终端会询问你几个哲学的问题"></a>回车之后，终端会询问你几个哲学的问题</h4><figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"># 选择编程语言</span><br><span class="line">What language <span class="keyword">do</span> you want to use?? [ Swift / ObjC ]</span><br><span class="line">&gt; Objc  </span><br><span class="line"></span><br><span class="line"># 在你的项目中是否创建一个demo工程，为了方便测试，我选择了Yes</span><br><span class="line">Would you like to include a demo application with your library? [ Yes / No ]</span><br><span class="line"> &gt; Yes  </span><br><span class="line"></span><br><span class="line"># 测试框架选择哪一个</span><br><span class="line">Which testing frameworks will you use? [ Specta / Kiwi / None ]</span><br><span class="line"> &gt; None</span><br><span class="line"></span><br><span class="line"># 要不要做视图测试</span><br><span class="line">Would you like to <span class="keyword">do</span> view based testing? [ Yes / No ]</span><br><span class="line"> &gt; Yes</span><br><span class="line"></span><br><span class="line"># 类前缀名</span><br><span class="line">What is your <span class="keyword">class</span> prefix?</span><br><span class="line"> &gt; GJ</span><br></pre></td></tr></table></figure>
+<h3 id="pod项目安装"><a href="#pod项目安装" class="headerlink" title="pod项目安装"></a>pod项目安装</h3><figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 安装CocoaPods项目</span></span><br><span class="line">pod install --no-repo-update</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>将项目添加到库的Classes文件夹中</li>
+</ul>
+<h3 id="编辑CocoaPods的配置文件（后缀名为podspec"><a href="#编辑CocoaPods的配置文件（后缀名为podspec" class="headerlink" title="编辑CocoaPods的配置文件（后缀名为podspec)"></a>编辑CocoaPods的配置文件（后缀名为podspec)</h3><p><img src="/.com//editpodspec.png" alt="shili"></p>
+<!--  -->
+
+<h3 id="pod项目更新"><a href="#pod项目更新" class="headerlink" title="pod项目更新"></a>pod项目更新</h3><figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 更新CocoaPods项目</span></span><br><span class="line">pod update --no-repo-update</span><br></pre></td></tr></table></figure>
+
+<h3 id="验证pod配置文件"><a href="#验证pod配置文件" class="headerlink" title="验证pod配置文件"></a>验证pod配置文件</h3><figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 验证pod配置文件</span></span><br><span class="line">pod lib lint</span><br></pre></td></tr></table></figure>
+
+<h3 id="发布项目"><a href="#发布项目" class="headerlink" title="发布项目"></a>发布项目</h3><figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"># 添加远程地址,即上面创建码云项目的地址</span><br><span class="line">BetterdeMacBook-Pro:PrivateHelloWorld better$ git remote add origin https:<span class="comment">//gitee.com/Better_Y/PrintHelloWorld.git</span></span><br><span class="line"># 添加文件</span><br><span class="line">BetterdeMacBook-Pro:PrivateHelloWorld better$ git add .</span><br><span class="line"># 提交本地，并写描述</span><br><span class="line">BetterdeMacBook-Pro:PrivateHelloWorld better$ git commit -a -m <span class="string">&quot;第一次提交 版本为0.0.1&quot;</span></span><br><span class="line"># --allow-unrelated-histories</span><br><span class="line"><span class="meta"># git pull origin maste会失败 ,提示：fatal: refusing to merge unrelated histories</span></span><br><span class="line"># 原因是远程仓库origin上的分支master和本地分支master被Git认为是不同的仓库，所以不能直接合并，需要添加 --allow-unrelated-histories</span><br><span class="line"></span><br><span class="line">BetterdeMacBook-Pro:PrivateHelloWorld better$ git pull origin master --allow-unrelated-histories</span><br><span class="line"># 推送到码云的PrintHelloWolrd项目的master分支上</span><br><span class="line">BetterdeMacBook-Pro:PrivateHelloWorld better$ git push origin master</span><br><span class="line"># 提交版本号</span><br><span class="line">BetterdeMacBook-Pro:PrivateHelloWorld better$ git tag <span class="number">0.0</span><span class="number">.1</span></span><br><span class="line"><span class="meta"># push到远程分支</span></span><br><span class="line">BetterdeMacBook-Pro:PrivateHelloWorld better$ git push origin <span class="number">0.0</span><span class="number">.1</span></span><br></pre></td></tr></table></figure>
+
+
+<h3 id="创建并发布Sepc管理库"><a href="#创建并发布Sepc管理库" class="headerlink" title="创建并发布Sepc管理库"></a>创建并发布Sepc管理库</h3><figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建Sepc</span></span><br><span class="line">pod repo add [repo-name] [git-url]</span><br><span class="line"><span class="comment">// 发布</span></span><br><span class="line">pod repo push [repo-name] [name.podspec]</span><br><span class="line"><span class="comment">// 删除</span></span><br><span class="line">pod repo remove [repo-name]</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用Cocoapods私有库"><a href="#使用Cocoapods私有库" class="headerlink" title="使用Cocoapods私有库"></a>使用Cocoapods私有库</h3><ul>
+<li>指定其他工程的<code>Podfile</code>文件中<code>source</code>字段为私有仓库<code>repo</code>仓库地址<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod <span class="string">&#x27;repo-name&#x27;</span>, :source=&gt;<span class="string">&#x27;cocoapods-repo-url&#x27;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+	
+	<div>
+	  
+	    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
+    
+</div>
+
+	  
+	</div>
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Mr.shao
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2022/04/02/custom-repo-ios/" title="私有pod库创建">http://example.com/2022/04/02/custom-repo-ios/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/iOS/" rel="tag"># iOS</a>
+              <a href="/tags/cocoapods/" rel="tag"># cocoapods</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/03/24/jk-categories/" rel="prev" title="JKCategories">
+      <i class="fa fa-chevron-left"></i> JKCategories
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%A7%81%E6%9C%89pod%E5%BA%93%EF%BC%9A"><span class="nav-number">1.</span> <span class="nav-text">创建私有pod库：</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9E%E8%BD%A6%E4%B9%8B%E5%90%8E%EF%BC%8C%E7%BB%88%E7%AB%AF%E4%BC%9A%E8%AF%A2%E9%97%AE%E4%BD%A0%E5%87%A0%E4%B8%AA%E5%93%B2%E5%AD%A6%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.1.</span> <span class="nav-text">回车之后，终端会询问你几个哲学的问题</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pod%E9%A1%B9%E7%9B%AE%E5%AE%89%E8%A3%85"><span class="nav-number">2.</span> <span class="nav-text">pod项目安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%BE%91CocoaPods%E7%9A%84%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%EF%BC%88%E5%90%8E%E7%BC%80%E5%90%8D%E4%B8%BApodspec"><span class="nav-number">3.</span> <span class="nav-text">编辑CocoaPods的配置文件（后缀名为podspec)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pod%E9%A1%B9%E7%9B%AE%E6%9B%B4%E6%96%B0"><span class="nav-number">4.</span> <span class="nav-text">pod项目更新</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81pod%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">5.</span> <span class="nav-text">验证pod配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%91%E5%B8%83%E9%A1%B9%E7%9B%AE"><span class="nav-number">6.</span> <span class="nav-text">发布项目</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%B9%B6%E5%8F%91%E5%B8%83Sepc%E7%AE%A1%E7%90%86%E5%BA%93"><span class="nav-number">7.</span> <span class="nav-text">创建并发布Sepc管理库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Cocoapods%E7%A7%81%E6%9C%89%E5%BA%93"><span class="nav-number">8.</span> <span class="nav-text">使用Cocoapods私有库</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Mr.shao"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Mr.shao</p>
+  <div class="site-description" itemprop="description">直到这一刻微笑着说话为止，我至少留下了一公升的眼泪</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/ShaoGitHub/" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;ShaoGitHub&#x2F;" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/u/3187377955" title="Weibo → https:&#x2F;&#x2F;weibo.com&#x2F;u&#x2F;3187377955" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>Weibo</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+	  
+	  <div id="music163player">
+	  	<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width="330" height="86" src="//music.163.com/outchain/player?type=2&id=569200212&auto=1&height=66">
+	  	</iframe>
+	  </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Mr.shao</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/koharu.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":false},"log":false});</script></body>
+</html>
+
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/clicklove.js"></script>
+
