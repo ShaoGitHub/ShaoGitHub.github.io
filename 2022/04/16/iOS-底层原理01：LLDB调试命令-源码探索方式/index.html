@@ -20,30 +20,36 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"b2t":true,"scrollpercent":true,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="直到这一刻微笑着说话为止，我至少留下了一公升的眼泪">
-<meta property="og:type" content="website">
-<meta property="og:title" content="白纸上涂鸦の博客">
-<meta property="og:url" content="http://example.com/index.html">
+  <meta name="description" content="在日常开发中我们经常会用到LLDB调试，比如：p xxx，po xxx，bt等等，这些调试命令的作用都是什么呢？ 源码探索对于开发来说也是一件必须要掌握的事情，源码探索的方法又有哪些呢？   下面针对这两点，我们将一一进行解释说明！">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iOS-底层原理01：LLDB调试命令&amp;源码探索方式">
+<meta property="og:url" content="http://example.com/2022/04/16/iOS-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%8601%EF%BC%9ALLDB%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-%E6%BA%90%E7%A0%81%E6%8E%A2%E7%B4%A2%E6%96%B9%E5%BC%8F/index.html">
 <meta property="og:site_name" content="白纸上涂鸦の博客">
-<meta property="og:description" content="直到这一刻微笑着说话为止，我至少留下了一公升的眼泪">
+<meta property="og:description" content="在日常开发中我们经常会用到LLDB调试，比如：p xxx，po xxx，bt等等，这些调试命令的作用都是什么呢？ 源码探索对于开发来说也是一件必须要掌握的事情，源码探索的方法又有哪些呢？   下面针对这两点，我们将一一进行解释说明！">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/04/16/2022-04-16-iOS-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%8601%EF%BC%9ALLDB%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-%E6%BA%90%E7%A0%81%E6%8E%A2%E7%B4%A2%E6%96%B9%E5%BC%8F/po%E5%91%BD%E4%BB%A4.jpg">
+<meta property="article:published_time" content="2022-04-16T15:31:17.000Z">
+<meta property="article:modified_time" content="2022-04-16T16:21:33.398Z">
 <meta property="article:author" content="Mr.shao">
+<meta property="article:tag" content="iOS">
+<meta property="article:tag" content="iOS底层原理">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/04/16/2022-04-16-iOS-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%8601%EF%BC%9ALLDB%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-%E6%BA%90%E7%A0%81%E6%8E%A2%E7%B4%A2%E6%96%B9%E5%BC%8F/po%E5%91%BD%E4%BB%A4.jpg">
 
-<link rel="canonical" href="http://example.com/">
+<link rel="canonical" href="http://example.com/2022/04/16/iOS-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%8601%EF%BC%9ALLDB%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-%E6%BA%90%E7%A0%81%E6%8E%A2%E7%B4%A2%E6%96%B9%E5%BC%8F/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>白纸上涂鸦の博客</title>
+  <title>iOS-底层原理01：LLDB调试命令&源码探索方式 | 白纸上涂鸦の博客</title>
   
 
 
@@ -158,9 +164,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
+
+    
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
@@ -176,10 +183,9 @@
       <meta itemprop="name" content="白纸上涂鸦の博客">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/04/16/iOS-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%8601%EF%BC%9ALLDB%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-%E6%BA%90%E7%A0%81%E6%8E%A2%E7%B4%A2%E6%96%B9%E5%BC%8F/" class="post-title-link" itemprop="url">iOS-底层原理01：LLDB调试命令&源码探索方式</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          iOS-底层原理01：LLDB调试命令&源码探索方式
+        </h1>
 
         <div class="post-meta">
             <span class="post-meta-item">
@@ -218,22 +224,23 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
+        <blockquote>
 <ol>
 <li>在日常开发中我们经常会用到<code>LLDB调试</code>，比如：p xxx，po xxx，bt等等，这些调试命令的作用都是什么呢？</li>
 <li><code>源码探索</code>对于开发来说也是一件必须要掌握的事情，源码探索的方法又有哪些呢？</li>
 </ol>
 </blockquote>
 <p>下面针对这两点，我们将一一进行解释说明！</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/04/16/iOS-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%8601%EF%BC%9ALLDB%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-%E6%BA%90%E7%A0%81%E6%8E%A2%E7%B4%A2%E6%96%B9%E5%BC%8F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
+<span id="more"></span>
+
+<h2 id="LLDB常用调试命令集合"><a href="#LLDB常用调试命令集合" class="headerlink" title="LLDB常用调试命令集合"></a>LLDB常用调试命令集合</h2><h3 id="1-p和po命令"><a href="#1-p和po命令" class="headerlink" title="1. p和po命令"></a>1. p和po命令</h3><ul>
+<li>p 命令： print 命令的简写，使用p 命令可以查看基本数据类型的值；如果使用p命令查看的是对象，那么只会返回对象的指针地址。 p命令后面除了可以接变量、常量，还可以接表达式。</li>
+<li>po 命令：print object的缩写，可以理解为打印对象。功能与p命令类似，也可以打印常量、变量，打印表达式返回的对象等。<br><img src="/./2022/04/16/2022-04-16-iOS-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%8601%EF%BC%9ALLDB%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-%E6%BA%90%E7%A0%81%E6%8E%A2%E7%B4%A2%E6%96%B9%E5%BC%8F/po%E5%91%BD%E4%BB%A4.jpg" alt="LLDB-p&amp;po命令"><blockquote>
+<p>p 和 po 的区别在于使用 po 只会输出对应的值，而 p 则会返回值的类型以及命令结果的引用名。</p>
+</blockquote>
+</li>
+</ul>
+
     </div>
 
     
@@ -242,251 +249,54 @@
 	
 	<div>
 	  
-	</div>
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/02/custom-repo-ios/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="Mr.shao">
-      <meta itemprop="description" content="直到这一刻微笑着说话为止，我至少留下了一公升的眼泪">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="白纸上涂鸦の博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/04/02/custom-repo-ios/" class="post-title-link" itemprop="url">私有pod库创建</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2022-04-02 22:14:10 / 修改时间：22:57:06" itemprop="dateCreated datePublished" datetime="2022-04-02T22:14:10+08:00">2022-04-02</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/iOS%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">iOS工具</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
+	    <div>
     
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
     
-    
-    <div class="post-body" itemprop="articleBody">
+</div>
 
-      
-          <h3 id="创建私有pod库："><a href="#创建私有pod库：" class="headerlink" title="创建私有pod库："></a>创建私有pod库：</h3><p>创建公有Pod库或者私有Pod库, 实际上原理是一样的, 都是基于git服务和repo协议, 不一样的是, 两者的版本索引查询方式不一样, 公有库的podspec由CocoaPods&#x2F;Specs管理, 而内部私有使用的pod库需要自己建立一个仓库来管理podspec.</p>
-<figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建pod库</span></span><br><span class="line"><span class="comment">// 例如：pod lib create GJNotifyView</span></span><br><span class="line">pod lib create [repo-name]</span><br></pre></td></tr></table></figure>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/04/02/custom-repo-ios/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-	
-	<div>
 	  
 	</div>
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/03/24/jk-categories/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="Mr.shao">
-      <meta itemprop="description" content="直到这一刻微笑着说话为止，我至少留下了一公升的眼泪">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="白纸上涂鸦の博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/03/24/jk-categories/" class="post-title-link" itemprop="url">JKCategories</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2022-03-24 22:08:01 / 修改时间：22:26:56" itemprop="dateCreated datePublished" datetime="2022-03-24T22:08:01+08:00">2022-03-24</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/iOS%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">iOS工具</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h4 id="JKCategories-iOS-Categories"><a href="#JKCategories-iOS-Categories" class="headerlink" title="JKCategories(iOS-Categories)"></a>JKCategories(iOS-Categories)</h4><p>JKCategories(iOS-Categories)，一个有用的Objective-C类别的集合，扩展了iOS框架，如Foundation、UIKit、CoreData、QuartzCore、CoreLocation、MapKit等。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/03/24/jk-categories/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
-    </div>
 
-    
-    
-    
-	
-	<div>
-	  
-	</div>
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Mr.shao
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2022/04/16/iOS-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%8601%EF%BC%9ALLDB%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-%E6%BA%90%E7%A0%81%E6%8E%A2%E7%B4%A2%E6%96%B9%E5%BC%8F/" title="iOS-底层原理01：LLDB调试命令&amp;源码探索方式">http://example.com/2022/04/16/iOS-底层原理01：LLDB调试命令-源码探索方式/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
+          <div class="post-tags">
+              <a href="/tags/iOS/" rel="tag"># iOS</a>
+              <a href="/tags/iOS%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86/" rel="tag"># iOS底层原理</a>
+          </div>
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/03/21/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="Mr.shao">
-      <meta itemprop="description" content="直到这一刻微笑着说话为止，我至少留下了一公升的眼泪">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="白纸上涂鸦の博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/03/21/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-03-21 23:47:38" itemprop="dateCreated datePublished" datetime="2022-03-21T23:47:38+08:00">2022-03-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-24 21:53:08" itemprop="dateModified" datetime="2022-03-24T21:53:08+08:00">2022-03-24</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/03/21/hello-world/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
-    </div>
 
-    
-    
-    
-	
-	<div>
-	  
-	</div>
-      <footer class="post-footer">
-        <div class="post-eof"></div>
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/02/custom-repo-ios/" rel="prev" title="私有pod库创建">
+      <i class="fa fa-chevron-left"></i> 私有pod库创建
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
       </footer>
+    
   </article>
   
   
-  
-
-
   
 
 
@@ -539,6 +349,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#LLDB%E5%B8%B8%E7%94%A8%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4%E9%9B%86%E5%90%88"><span class="nav-number">1.</span> <span class="nav-text">LLDB常用调试命令集合</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-p%E5%92%8Cpo%E5%91%BD%E4%BB%A4"><span class="nav-number">1.1.</span> <span class="nav-text">1. p和po命令</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
